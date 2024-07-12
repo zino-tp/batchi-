@@ -77,6 +77,21 @@ def get_location_info(public_ip):
 
     return location_info
 
+# Function to get physical address from location coordinates
+def get_address(location):
+    if 'loc' in location:
+        lat, lon = location['loc'].split(',')
+        response = requests.get(f'https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}')
+        if response.status_code == 200:
+            address_info = response.json()
+            address = address_info.get('display_name', 'Address not found')
+        else:
+            address = 'Could not retrieve address information'
+    else:
+        address = 'Location coordinates not available'
+    
+    return address
+
 # Function to get device information
 def get_device_info():
     device_info = {
@@ -136,6 +151,7 @@ network_info = get_network_info()
 wifi_details = get_wifi_details()
 public_ip = get_public_ip()
 location_info = get_location_info(public_ip)
+address = get_address(location_info)
 device_info = get_device_info()
 storage_info = get_storage_info()
 memory_info = get_memory_info()
@@ -181,6 +197,7 @@ with open(log_file_path, 'w') as f:
     else:
         for key, value in location_info.items():
             f.write(f"{key.capitalize()}: {value}\n")
+    f.write(f"Address: {address}\n")
     f.write("\n")
 
     f.write("=== Storage Information ===\n")
