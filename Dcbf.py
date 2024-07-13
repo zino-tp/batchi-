@@ -235,5 +235,4 @@ message += (
     f"{network_connections}\n"
 )
 
-# Send message to Discord webhook
-send_to_discord(message)
+# Send message to
